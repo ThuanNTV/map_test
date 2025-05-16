@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Visitor Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    />
+    <style>
+      #map {
+        height: 100vh;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+      const map = L.map("map").setView([10.762622, 106.660172], 5);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 18,
+      }).addTo(map);
+
+      fetch("/view-logs")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.status !== "ok") {
+            alert("Không thể tải dữ liệu logs");
+            return;
+          }
+          const logs = data.logs;
+          logs.forEach((log) => {
+            if (log.Lat && log.Lon) {
+              const lat = parseFloat(log.Lat);
+              const lon = parseFloat(log.Lon);
+              if (!isNaN(lat) && !isNaN(lon)) {
+                const marker = L.marker([lat, lon]).addTo(map);
+                marker.bindPopup(`
+                <b>IP:</b> ${log.IP}<br/>
+                <b>Client:</b> ${log.Client}<br/>
+                <b>City:</b> ${log.City}<br/>
+                <b>Time:</b> ${new Date(log.Time).toLocaleString()}
+              `);
+              }
+            }
+          });
+        })
+        .catch((err) => {
+          console.error("Lỗi tải dữ liệu logs:", err);
+          alert("Lỗi tải dữ liệu logs");
+        });
+    </script>
+  </body>
+</html>

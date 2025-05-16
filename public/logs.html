@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Logs Viewer</title>
+    <link
+      href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <h2>📊 Logs</h2>
+    <table id="logTable" class="display" style="width: 100%">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>IP</th>
+          <th>OS</th>
+          <th>Device</th>
+          <th>Client</th>
+          <th>City</th>
+          <th>Region</th>
+          <th>Country</th>
+          <th>ISP</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script>
+      $(document).ready(() => {
+        $.getJSON("/view-logs", (res) => {
+          if (res.status === "ok") {
+            const rows = res.logs.map(
+              (row) =>
+                `<tr>
+              <td>${row.Time}</td>
+              <td>${row.IP}</td>
+              <td>${row.OS}</td>
+              <td>${row.Device}</td>
+              <td>${row.Client}</td>
+              <td>${row.City}</td>
+              <td>${row.Region}</td>
+              <td>${row.Country}</td>
+              <td>${row.ISP}</td>
+            </tr>`,
+            );
+            $("#logTable tbody").html(rows.join(""));
+            $("#logTable").DataTable();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

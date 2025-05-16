@@ -1,15 +1,15 @@
 {
-  "name": "nodejs",
+  "name": "ip-tracker",
   "version": "1.0.0",
-  "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@types/node": "^22.13.11"
+    "axios": "^1.6.0",
+    "csv-parser": "^3.0.0",
+    "device-detector-js": "^2.2.10",
+    "express": "^4.18.2"
   }
 }

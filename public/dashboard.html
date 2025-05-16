@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard Tracking</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #f5f5f5;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📊 Thống kê truy cập</h1>
+    <table id="logTable">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>IP</th>
+          <th>OS</th>
+          <th>Device</th>
+          <th>Client</th>
+          <th>City</th>
+          <th>Region</th>
+          <th>Country</th>
+          <th>ISP</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      async function loadLogs() {
+        const res = await fetch("/api/logs");
+        const logs = await res.json();
+        const tbody = document.querySelector("#logTable tbody");
+        logs.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td>${row.Time}</td><td>${row.IP}</td><td>${row.OS}</td><td>${row.Device}</td>
+          <td>${row.Client}</td><td>${row.City}</td><td>${row.Region}</td>
+          <td>${row.Country}</td><td>${row.ISP}</td>
+        `;
+          tbody.appendChild(tr);
+        });
+      }
+      loadLogs();
+    </script>
+  </body>
+</html>

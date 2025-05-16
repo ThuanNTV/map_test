@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Trang chào mừng</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .container {
+        margin-top: 40px;
+      }
+      h1 {
+        color: #2c3e50;
+      }
+      .content {
+        margin-top: 20px;
+      }
+      .footer {
+        margin-top: 40px;
+        font-size: 14px;
+        color: #7f8c8d;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>👋 Chào bạn đến với hệ thống</h1>
+      <div class="content">
+        <p>Chúng tôi rất vui khi bạn ghé thăm trang web của chúng tôi.</p>
+        <p>Hãy khám phá các tính năng mới nhất mà chúng tôi cung cấp!</p>
+      </div>
+      <div class="footer">
+        <p>© 2025 - Mọi quyền được bảo lưu</p>
+      </div>
+    </div>
+
+    <!-- Logging script - hidden from user view -->
+    <script>
+      // Ẩn quá trình ghi log
+      (function () {
+        // Thêm một số thông số ngẫu nhiên để tránh bị chặn bởi ad-blocker
+        const timestamp = new Date().getTime();
+        const randomParam = Math.floor(Math.random() * 1000000);
+
+        // Sử dụng fetch API với phương thức GET và thêm tham số ngẫu nhiên
+        fetch(`/log?t=${timestamp}&r=${randomParam}`, {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        }).catch((error) => {
+          // Không hiển thị lỗi cho người dùng
+          console.error = function () {};
+        });
+
+        // Ghi đè console.log để tránh hiển thị thông tin
+        const originalConsole = window.console;
+        window.console = {
+          ...originalConsole,
+          log: function () {},
+          error: function () {},
+          warn: function () {},
+        };
+      })();
+    </script>
+  </body>
+</html>

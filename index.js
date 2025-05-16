@@ -7,6 +7,9 @@ import DeviceDetector from "device-detector-js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import csvParser from "csv-parser";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,12 +17,44 @@ const app = express();
 const detector = new DeviceDetector();
 const LOG_FILE = path.join(__dirname, "logs.csv");
 
+// Add basic auth middleware
+const basicAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    res.setHeader("WWW-Authenticate", "Basic");
+    return res.status(401).json({
+      status: "error",
+      message: "Authentication required",
+    });
+  }
+
+  const auth = Buffer.from(authHeader.split(" ")[1], "base64")
+    .toString()
+    .split(":");
+  const username = auth[0];
+  const password = auth[1];
+
+  if (
+    username === process.env.ADMIN_USERNAME &&
+    password === process.env.ADMIN_PASSWORD
+  ) {
+    next();
+  } else {
+    res.setHeader("WWW-Authenticate", "Basic");
+    return res.status(401).json({
+      status: "error",
+      message: "Invalid credentials",
+    });
+  }
+};
+
 app.use(express.static("public"));
 
 if (!fs.existsSync(LOG_FILE)) {
   fs.writeFileSync(
     LOG_FILE,
-    "Time,IP,OS,Device,Client,Engine,Browser Type,Platform,Referrer,City,Region,Country,Zip,Lat,Lon,Timezone,ISP,Org,ASN,Languages,URL\n",
+    "Time,IP,OS,Device,Client,Engine,Browser Type,Platform,Referrer,City,Region,Country,Zip,Lat,Lon,Timezone,ISP,Org,ASN,Languages,URL\n"
   );
 }
 
@@ -53,7 +88,7 @@ app.get("/log", async (req, res) => {
     as = "";
   try {
     const geo = await axios.get(
-      `http://ip-api.com/json/${ip}?fields=status,message,city,regionName,country,zip,lat,lon,timezone,isp,org,as`,
+      `http://ip-api.com/json/${ip}?fields=status,message,city,regionName,country,zip,lat,lon,timezone,isp,org,as`
     );
     if (geo.data.status === "success") {
       ({
@@ -89,7 +124,7 @@ app.get("/map", (req, res) => {
   res.sendFile(path.join(__dirname, "public/map.html"));
 });
 
-app.get("/view-logs", (req, res) => {
+app.get("/view-logs", basicAuth, (req, res) => {
   if (!fs.existsSync(LOG_FILE)) {
     return res.status(404).json({ status: "error", message: "No logs found" });
   }
@@ -122,7 +157,7 @@ app.get("/view-logs", (req, res) => {
           "URL",
         ],
         skipLines: 1,
-      }),
+      })
     )
     .on("data", (data) => logs.push(data))
     .on("end", () => {
@@ -135,7 +170,7 @@ app.get("/view-logs", (req, res) => {
         cities: countBy(logs, "City"),
         times: logs.map((l) => l.Time),
         suspicious: logs.filter(
-          (l) => l.Client === "Unknown" || l.BrowserType === "bot",
+          (l) => l.Client === "Unknown" || l.BrowserType === "bot"
         ),
       };
       res.json({ status: "ok", logs, analytics });

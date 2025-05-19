@@ -5,77 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Xem Logs - Bản Đồ Du Lịch Việt Nam</title>
     <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
+      crossorigin="anonymous"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
     />
     <link
       rel="stylesheet"
-      href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"
+      href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.11.5/css/dataTables.bootstrap5.min.css"
     />
     <style>
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: #f5f5f5;
-      }
-      .header {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        color: white;
-        padding: 1rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        background-color: #f4f7f6;
+        padding-top: 20px;
       }
       .card {
-        border: none;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-bottom: 1rem;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
       }
       .card-header {
-        background: white;
-        border-bottom: 1px solid #eee;
-        padding: 1rem;
-      }
-      .stats-card {
-        background: white;
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      }
-      .stats-card i {
-        font-size: 2rem;
-        color: #2a5298;
-      }
-      .table {
-        margin-bottom: 0;
-      }
-      .table th {
-        background: #f8f9fa;
-        border-top: none;
-      }
-      .loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.9);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
+        background-color: #2a5298;
+        color: white;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        font-weight: bold;
       }
       .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid #f3f3f3;
-        border-top: 5px solid #3498db;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
         border-radius: 50%;
         animation: spin 1s linear infinite;
+        margin: 20px auto;
+        display: block;
       }
       @keyframes spin {
         0% {
@@ -85,43 +57,62 @@
           transform: rotate(360deg);
         }
       }
+      .dataTables_filter input {
+        margin-bottom: 10px;
+        border-radius: 4px;
+        border: 1px solid #ced4da;
+        padding: 5px 10px;
+      }
+      .dataTables_wrapper .pagination {
+        justify-content: center;
+      }
+      .dataTables_wrapper .pagination .page-item .page-link {
+        border-radius: 4px;
+        margin: 0 2px;
+      }
+      th,
+      td {
+        white-space: nowrap;
+      }
     </style>
   </head>
   <body>
-    <div class="header">
-      <div class="container">
-        <h1><i class="fas fa-chart-line"></i> Thống Kê Truy Cập</h1>
-      </div>
-    </div>
-
     <div class="container">
-      <div class="row mb-4">
+      <h2 class="text-center mb-4">
+        <i class="fas fa-chart-bar"></i> Thống kê Truy cập
+      </h2>
+
+      <div class="row">
         <div class="col-md-3">
-          <div class="stats-card">
-            <i class="fas fa-users"></i>
-            <h3 id="totalVisits">0</h3>
-            <p class="text-muted">Tổng lượt truy cập</p>
+          <div class="card text-center">
+            <div class="card-header">Tổng lượt truy cập</div>
+            <div class="card-body">
+              <h5 class="card-title" id="totalRequests">0</h5>
+            </div>
           </div>
         </div>
         <div class="col-md-3">
-          <div class="stats-card">
-            <i class="fas fa-map-marker-alt"></i>
-            <h3 id="uniqueLocations">0</h3>
-            <p class="text-muted">Vị trí khác nhau</p>
+          <div class="card text-center">
+            <div class="card-header">Địa điểm duy nhất</div>
+            <div class="card-body">
+              <h5 class="card-title" id="uniqueLocations">0</h5>
+            </div>
           </div>
         </div>
         <div class="col-md-3">
-          <div class="stats-card">
-            <i class="fas fa-globe"></i>
-            <h3 id="uniqueCountries">0</h3>
-            <p class="text-muted">Quốc gia</p>
+          <div class="card text-center">
+            <div class="card-header">Quốc gia</div>
+            <div class="card-body">
+              <h5 class="card-title" id="countries">0</h5>
+            </div>
           </div>
         </div>
         <div class="col-md-3">
-          <div class="stats-card">
-            <i class="fas fa-desktop"></i>
-            <h3 id="uniqueDevices">0</h3>
-            <p class="text-muted">Thiết bị</p>
+          <div class="card text-center">
+            <div class="card-header">Thiết bị</div>
+            <div class="card-body">
+              <h5 class="card-title" id="devices">0</h5>
+            </div>
           </div>
         </div>
       </div>
@@ -130,111 +121,168 @@
         <div
           class="card-header d-flex justify-content-between align-items-center"
         >
-          <h5 class="mb-0"><i class="fas fa-list"></i> Chi tiết truy cập</h5>
-          <div class="btn-group">
-            <button
-              class="btn btn-outline-primary btn-sm"
-              onclick="exportToCSV()"
-            >
-              <i class="fas fa-download"></i> Xuất CSV
+          Chi tiết Log Truy cập
+          <div>
+            <button class="btn btn-light btn-sm me-2" onclick="exportToCsv()">
+              <i class="fas fa-file-csv"></i> Xuất CSV
             </button>
-            <button
-              class="btn btn-outline-primary btn-sm"
-              onclick="refreshData()"
-            >
+            <button class="btn btn-light btn-sm" onclick="fetchLogs()">
               <i class="fas fa-sync-alt"></i> Làm mới
             </button>
           </div>
         </div>
         <div class="card-body">
+          <div class="loading-spinner" id="loadingSpinner"></div>
           <div class="table-responsive">
-            <table id="logsTable" class="table table-striped">
+            <table
+              id="logsTable"
+              class="table table-striped table-bordered"
+              style="width: 100%"
+            >
               <thead>
                 <tr>
                   <th>Thời gian</th>
                   <th>IP</th>
-                  <th>Vị trí</th>
-                  <th>Thiết bị</th>
-                  <th>Trình duyệt</th>
                   <th>Hệ điều hành</th>
+                  <th>Thiết bị</th>
+                  <th>Loại thiết bị</th>
+                  <th>Engine</th>
+                  <th>Trình duyệt</th>
+                  <th>Nền tảng</th>
+                  <th>Model thiết bị</th>
+                  <th>Phiên bản trình duyệt</th>
+                  <th>Referrer</th>
+                  <th>Thành phố</th>
+                  <th>Khu vực</th>
+                  <th>Quốc gia</th>
+                  <th>Mã bưu điện</th>
+                  <th>Vĩ độ</th>
+                  <th>Kinh độ</th>
+                  <th>Múi giờ</th>
+                  <th>ISP</th>
+                  <th>Tổ chức</th>
+                  <th>ASN</th>
+                  <th>Ngôn ngữ</th>
+                  <th>URL</th>
+                  <th>Vị trí</th>
+                  <th>Rộng màn hình</th>
+                  <th>Cao màn hình</th>
+                  <th>Độ sâu màu</th>
+                  <th>Tỷ lệ pixel</th>
+                  <th>Múi giờ (Client)</th>
+                  <th>Ngôn ngữ (Client)</th>
+                  <th>Do Not Track</th>
+                  <th>Cookies</th>
+                  <th>Local Storage</th>
+                  <th>Session Storage</th>
+                  <th>Touch Support</th>
+                  <th>Battery Level</th>
+                  <th>Connection Type</th>
                 </tr>
               </thead>
-              <tbody></tbody>
+              <tbody>
+                <!-- DataTables will populate this -->
+              </tbody>
             </table>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="loading" id="loading">
-      <div class="loading-spinner"></div>
-    </div>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script>
-      let dataTable;
-      const loading = document.getElementById("loading");
+      let logsTable;
 
-      function showLoading() {
-        loading.style.display = "flex";
+      $(document).ready(function () {
+        fetchLogs();
+
+        // Tự động làm mới sau mỗi 5 phút
+        setInterval(fetchLogs, 300000);
+      });
+
+      async function fetchLogs() {
+        const loadingSpinner = document.getElementById("loadingSpinner");
+        loadingSpinner.style.display = "block";
+
+        try {
+          const response = await fetch("/view-logs");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          updateStats(data.analytics);
+          populateTable(data.logs);
+        } catch (error) {
+          console.error("Error fetching logs:", error);
+        } finally {
+          loadingSpinner.style.display = "none";
+        }
       }
 
-      function hideLoading() {
-        loading.style.display = "none";
-      }
-
-      function updateStats(data) {
-        document.getElementById("totalVisits").textContent =
-          data.analytics.totalRequests;
-        document.getElementById("uniqueLocations").textContent = Object.keys(
-          data.analytics.cities
+      function updateStats(analytics) {
+        document.getElementById("totalRequests").textContent =
+          analytics.totalRequests || 0;
+        document.getElementById("uniqueLocations").textContent =
+          analytics.uniqueIPs || 0;
+        document.getElementById("countries").textContent = Object.keys(
+          analytics.countries || {}
         ).length;
-        document.getElementById("uniqueCountries").textContent = Object.keys(
-          data.analytics.countries
-        ).length;
-        document.getElementById("uniqueDevices").textContent = Object.keys(
-          data.analytics.browsers
+        document.getElementById("devices").textContent = Object.keys(
+          analytics.browsers || {}
         ).length;
       }
 
-      function initDataTable(data) {
-        if (dataTable) {
-          dataTable.destroy();
+      function populateTable(logs) {
+        if (logsTable) {
+          logsTable.destroy();
         }
 
-        dataTable = $("#logsTable").DataTable({
-          data: data.logs,
+        logsTable = $("#logsTable").DataTable({
+          data: logs,
           columns: [
-            {
-              data: "Time",
-              render: function (data) {
-                return new Date(data).toLocaleString("vi-VN");
-              },
-            },
+            { data: "Time" },
             { data: "IP" },
-            {
-              data: null,
-              render: function (data) {
-                return `${data.City}, ${data.Country}`;
-              },
-            },
-            {
-              data: null,
-              render: function (data) {
-                return `${data.Device} (${data.Platform})`;
-              },
-            },
-            {
-              data: null,
-              render: function (data) {
-                return `${data.Client} ${data.BrowserVersion}`;
-              },
-            },
+            { data: "UserAgent" },
+            { data: "Referer" },
+            { data: "DeviceType" },
             { data: "OS" },
+            { data: "Browser" },
+            { data: "BrowserVersion" },
+            { data: "Location (GeoIP)" },
+            { data: "Lat (GeoIP)" },
+            { data: "Lon (GeoIP)" },
+            { data: "Timezone (GeoIP)" },
+            { data: "ISP" },
+            { data: "Org" },
+            { data: "ASN" },
+            { data: "ScreenWidth" },
+            { data: "ScreenHeight" },
+            { data: "ColorDepth" },
+            { data: "PixelRatio" },
+            { data: "Timezone (Client)" },
+            { data: "Language" },
+            { data: "DoNotTrack" },
+            { data: "CookiesEnabled" },
+            { data: "LocalStorage" },
+            { data: "SessionStorage" },
+            { data: "TouchSupport" },
+            { data: "BatteryLevel" },
+            { data: "ConnectionType" },
+            { data: "DeviceMemory" },
+            { data: "HardwareConcurrency" },
+            { data: "Plugins" },
+            { data: "Fonts" },
+            { data: "ApiSupport" },
+            { data: "SecurityInfo" },
+            { data: "PeripheralInfo" },
+            { data: "PerformanceInfo" },
+            { data: "NetworkInfo" },
           ],
+          responsive: true,
           order: [[0, "desc"]],
           language: {
             url: "//cdn.datatables.net/plug-ins/1.11.5/i18n/vi.json",
@@ -242,62 +290,48 @@
         });
       }
 
-      function loadData() {
-        showLoading();
-        fetch("/view-logs")
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.status === "ok") {
-              updateStats(data);
-              initDataTable(data);
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            alert("Có lỗi xảy ra khi tải dữ liệu");
-          })
-          .finally(() => {
-            hideLoading();
-          });
-      }
-
-      function exportToCSV() {
-        const table = document.getElementById("logsTable");
-        const rows = table.querySelectorAll("tr");
-        let csv = [];
-
-        for (let i = 0; i < rows.length; i++) {
-          const row = [],
-            cols = rows[i].querySelectorAll("td, th");
-          for (let j = 0; j < cols.length; j++) {
-            let data = cols[j].innerText
-              .replace(/(\r\n|\n|\r)/gm, "")
-              .replace(/,/g, ";");
-            row.push('"' + data + '"');
-          }
-          csv.push(row.join(","));
+      function exportToCsv() {
+        const logs = logsTable.data().toArray();
+        if (logs.length === 0) {
+          alert("Không có dữ liệu để xuất.");
+          return;
         }
 
-        const csvContent = csv.join("\n");
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
+        // Lấy tên cột từ header của bảng
+        const header = logsTable
+          .columns()
+          .header()
+          .toArray()
+          .map((th) => th.textContent)
+          .join(",");
+        const csvRows = [header];
+
+        logs.forEach((log) => {
+          const values = Object.values(log).map((value) => {
+            if (value === null || value === undefined) return "";
+            let stringValue = String(value);
+            if (
+              stringValue.includes(",") ||
+              stringValue.includes('"') ||
+              stringValue.includes("\n")
+            ) {
+              stringValue = stringValue.replace(/"/g, '""');
+              return `"${stringValue}"`;
+            }
+            return stringValue;
+          });
+          csvRows.push(values.join(","));
         });
+
+        const csvString = csvRows.join("\n");
+        const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download =
-          "logs_" + new Date().toISOString().slice(0, 10) + ".csv";
+        link.setAttribute("download", "logs.csv");
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
       }
-
-      function refreshData() {
-        loadData();
-      }
-
-      // Tự động tải dữ liệu khi trang được tải
-      window.onload = loadData;
-
-      // Tự động làm mới dữ liệu mỗi 5 phút
-      setInterval(loadData, 300000);
     </script>
   </body>
 </html>

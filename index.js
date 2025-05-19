@@ -19,8 +19,73 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
+
+// Thêm middleware để parse JSON request body
+app.use(express.json());
+
 const detector = new DeviceDetector();
 const LOG_FILE = path.join(__dirname, "logs.csv");
+
+// Định nghĩa các trường log và thứ tự
+const LOG_FIELDS = [
+  "Time",
+  "IP",
+  "UserAgent",
+  "Referer",
+  "DeviceType",
+  "OS",
+  "Browser",
+  "BrowserVersion",
+  "Location (GeoIP)",
+  "Lat (GeoIP)",
+  "Lon (GeoIP)",
+  "Timezone (GeoIP)",
+  "ISP",
+  "Org",
+  "ASN",
+  "ScreenWidth",
+  "ScreenHeight",
+  "ColorDepth",
+  "PixelRatio",
+  "Timezone (Client)",
+  "Language",
+  "DoNotTrack",
+  "CookiesEnabled",
+  "LocalStorage",
+  "SessionStorage",
+  "TouchSupport",
+  "BatteryLevel",
+  "ConnectionType",
+  "DeviceMemory",
+  "HardwareConcurrency",
+  "Plugins", // Có thể chứa JSON
+  "Fonts", // Có thể chứa JSON
+  "ApiSupport", // Có thể chứa JSON
+  "SecurityInfo", // Có thể chứa JSON
+  "PeripheralInfo", // Có thể chứa JSON
+  "PerformanceInfo", // Có thể chứa JSON
+  "NetworkInfo", // Có thể chứa JSON
+];
+
+// Hàm escape giá trị cho CSV
+function escapeCsvValue(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  // Chuyển đổi tất cả giá trị thành chuỗi
+  const stringValue = String(value);
+  // Nếu giá trị chứa dấu phẩy, dấu ngoặc kép hoặc xuống dòng, bọc trong dấu ngoặc kép
+  if (
+    stringValue.includes(",") ||
+    stringValue.includes('"') ||
+    stringValue.includes("\n")
+  ) {
+    // Escape dấu ngoặc kép bằng cách nhân đôi nó
+    const escapedValue = stringValue.replace(/"/g, '""');
+    return `"${escapedValue}"`;
+  }
+  return stringValue;
+}
 
 // Cấu hình bảo mật cơ bản
 app.use(
@@ -32,16 +97,16 @@ app.use(
           "'self'",
           "'unsafe-inline'",
           "'unsafe-eval'",
-          "unpkg.com",
-          "cdn.jsdelivr.net",
-          "cdnjs.cloudflare.com",
+          "https://unpkg.com",
+          "https://cdn.jsdelivr.net",
+          "https://cdnjs.cloudflare.com",
         ],
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
-          "unpkg.com",
-          "cdn.jsdelivr.net",
-          "cdnjs.cloudflare.com",
+          "https://unpkg.com",
+          "https://cdn.jsdelivr.net",
+          "https://cdnjs.cloudflare.com",
         ],
         imgSrc: [
           "'self'",
@@ -132,10 +197,8 @@ const basicAuth = (req, res, next) => {
 app.use(express.static("public"));
 
 if (!fs.existsSync(LOG_FILE)) {
-  fs.writeFileSync(
-    LOG_FILE,
-    "Time,IP,OS,Device,Client,Engine,Browser Type,Platform,Device Model,Browser Version,Referrer,City,Region,Country,Zip,Lat,Lon,Timezone,ISP,Org,ASN,Languages,URL,Location,Consent Given\n"
-  );
+  // Sử dụng header từ LOG_FIELDS
+  fs.writeFileSync(LOG_FILE, LOG_FIELDS.join(",") + "\n");
 }
 
 // Hàm xác thực timestamp
@@ -179,11 +242,14 @@ async function validateGeolocation(ip, lat, lon) {
   }
 }
 
-app.get("/log", async (req, res) => {
+// Thay đổi từ app.get sang app.post để nhận JSON body
+app.post("/log", async (req, res) => {
   try {
-    // Chỉ log cảnh báo hoặc lỗi khi production
-    // console.log('[DEBUG][BACKEND] Nhận request /log');
-    // BỎ kiểm tra cookie consent để test
+    // Lấy dữ liệu từ body thay vì query
+    const logData = req.body;
+    console.log("[DEBUG][BACKEND] Nhận request POST /log với body:", logData);
+
+    // BỎ kiểm tra cookie consent để test (từ phiên trước)
     // const consentGiven = req.cookies.consent === "true";
     // if (!consentGiven) {
     //   return res.status(403).json({
@@ -192,12 +258,13 @@ app.get("/log", async (req, res) => {
     //   });
     // }
 
+    // Lấy IP, UserAgent, Referer từ headers
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     const userAgent = req.headers["user-agent"];
     const referer = req.headers.referer || "Direct";
-    // console.log("[DEBUG][BACKEND] IP:", ip);
-    // console.log("[DEBUG][BACKEND] UserAgent:", userAgent);
-    // console.log("[DEBUG][BACKEND] Referer:", referer);
+    console.log("[DEBUG][BACKEND] IP:", ip);
+    console.log("[DEBUG][BACKEND] UserAgent:", userAgent);
+    console.log("[DEBUG][BACKEND] Referer:", referer);
 
     // Sử dụng device-detector-js để phân tích user agent
     const device = detector.parse(userAgent);
@@ -205,38 +272,58 @@ app.get("/log", async (req, res) => {
     const os = device.os?.name || "Unknown";
     const browser = device.client?.name || "Unknown";
     const browserVersion = device.client?.version || "Unknown";
-    // console.log(
-    //   "[DEBUG][BACKEND] Device:",
-    //   deviceType,
-    //   os,
-    //   browser,
-    //   browserVersion
-    // );
+    console.log(
+      "[DEBUG][BACKEND] Device:",
+      deviceType,
+      os,
+      browser,
+      browserVersion
+    );
 
-    const timestamp = new Date().toISOString();
-    // console.log("[DEBUG][BACKEND] Timestamp:", timestamp);
+    // Lấy timestamp từ data gửi lên hoặc tạo mới
+    const timestamp = logData.timestamp || new Date().toISOString();
+    console.log("[DEBUG][BACKEND] Timestamp:", timestamp);
 
     // Xác thực timestamp
     if (!validateTimestamp(timestamp)) {
       console.warn(`[BACKEND] Invalid timestamp detected for IP ${ip}`);
     }
 
-    // Lấy thông tin vị trí từ IP
-    const geoResponse = await fetch(`http://ip-api.com/json/${ip}`);
-    const geoData = await geoResponse.json();
-    const location =
-      geoData.status === "success"
-        ? `${geoData.city}, ${geoData.regionName}, ${geoData.country}`
-        : "Unknown";
-    // console.log("[DEBUG][BACKEND] GeoData:", geoData);
+    // Lấy thông tin vị trí từ IP (dự phòng nếu client không gửi hoặc gửi lỗi)
+    let geoData = {};
+    let locationGeoIP = "Unknown";
+    let latGeoIP = "Unknown";
+    let lonGeoIP = "Unknown";
+    let timezoneGeoIP = "Unknown";
+    let isp = "Unknown";
+    let org = "Unknown";
+    let asn = "Unknown";
 
-    // Lấy thông tin chi tiết từ request
+    try {
+      const geoResponse = await fetch(`http://ip-api.com/json/${ip}`);
+      geoData = await geoResponse.json();
+      if (geoData.status === "success") {
+        locationGeoIP = `${geoData.city}, ${geoData.regionName}, ${geoData.country}`;
+        latGeoIP = geoData.lat;
+        lonGeoIP = geoData.lon;
+        timezoneGeoIP = geoData.timezone;
+        isp = geoData.isp;
+        org = geoData.org;
+        asn = geoData.as;
+      }
+    } catch (geoError) {
+      console.error("[BACKEND] Error fetching GeoIP data:", geoError);
+    }
+    console.log("[DEBUG][BACKEND] GeoData (from IP):", geoData);
+
+    // Lấy thông tin chi tiết từ body (client)
     const {
+      location: clientLocation, // Tên mới để tránh trùng với locationGeoIP
       screenWidth,
       screenHeight,
       colorDepth,
       pixelRatio,
-      timezone,
+      timezone: clientTimezone, // Tên mới để tránh trùng với timezoneGeoIP
       language,
       doNotTrack,
       cookiesEnabled,
@@ -254,25 +341,25 @@ app.get("/log", async (req, res) => {
       peripheralInfo,
       performanceInfo,
       networkInfo,
-      latitude,
-      longitude,
-    } = req.query;
-    // console.log("[DEBUG][BACKEND] Query:", req.query);
+      latitude: clientLatitude, // Tên mới
+      longitude: clientLongitude, // Tên mới
+    } = logData;
+    console.log("[DEBUG][BACKEND] LogData (from Client Body):", logData);
 
-    // Xác thực geolocation nếu có
-    if (latitude && longitude) {
+    // Xác thực geolocation nếu client gửi lat/lon
+    if (clientLatitude && clientLongitude) {
       const isValidLocation = await validateGeolocation(
         ip,
-        latitude,
-        longitude
+        clientLatitude,
+        clientLongitude
       );
       if (!isValidLocation) {
         console.warn(`[BACKEND] Suspicious geolocation detected for IP ${ip}`);
       }
     }
 
-    // Tạo log entry với tất cả thông tin
-    const logEntry = [
+    // Tạo log entry với tất cả thông tin theo thứ tự LOG_FIELDS
+    const logEntryValues = [
       timestamp,
       ip,
       userAgent,
@@ -281,37 +368,38 @@ app.get("/log", async (req, res) => {
       os,
       browser,
       browserVersion,
-      location,
-      geoData.lat || "Unknown",
-      geoData.lon || "Unknown",
-      geoData.timezone || "Unknown",
-      geoData.isp || "Unknown",
-      geoData.org || "Unknown",
-      geoData.as || "Unknown",
-      screenWidth || "Unknown",
-      screenHeight || "Unknown",
-      colorDepth || "Unknown",
-      pixelRatio || "Unknown",
-      timezone || "Unknown",
-      language || "Unknown",
-      doNotTrack || "Unknown",
-      cookiesEnabled || "Unknown",
-      localStorage || "Unknown",
-      sessionStorage || "Unknown",
-      touchSupport || "Unknown",
-      batteryLevel || "Unknown",
-      connectionType || "Unknown",
-      deviceMemory || "Unknown",
-      hardwareConcurrency || "Unknown",
-      plugins || "Unknown",
-      fonts || "Unknown",
-      apiSupport || "Unknown",
-      securityInfo || "Unknown",
-      peripheralInfo || "Unknown",
-      performanceInfo || "Unknown",
-      networkInfo || "Unknown",
-      // consentGiven, // đã bỏ
-    ].join(",");
+      locationGeoIP, // Sử dụng GeoIP location
+      latGeoIP, // Sử dụng GeoIP lat
+      lonGeoIP, // Sử dụng GeoIP lon
+      timezoneGeoIP, // Sử dụng GeoIP timezone
+      isp,
+      org,
+      asn,
+      screenWidth || "Unknown", // Client data
+      screenHeight || "Unknown", // Client data
+      colorDepth || "Unknown", // Client data
+      pixelRatio || "Unknown", // Client data
+      clientTimezone || "Unknown", // Client data
+      language || "Unknown", // Client data
+      doNotTrack || "Unknown", // Client data
+      cookiesEnabled || "Unknown", // Client data
+      localStorage || "Unknown", // Client data
+      sessionStorage || "Unknown", // Client data
+      touchSupport || "Unknown", // Client data
+      batteryLevel || "Unknown", // Client data
+      connectionType || "Unknown", // Client data
+      deviceMemory || "Unknown", // Client data
+      hardwareConcurrency || "Unknown", // Client data
+      plugins || "Unknown", // Client data
+      fonts || "Unknown", // Client data
+      apiSupport || "Unknown", // Client data
+      securityInfo || "Unknown", // Client data
+      peripheralInfo || "Unknown", // Client data
+      performanceInfo || "Unknown", // Client data
+      networkInfo || "Unknown", // Client data
+    ];
+
+    const logEntry = logEntryValues.map(escapeCsvValue).join(",");
     // console.log("[DEBUG][BACKEND] Log entry:", logEntry);
 
     // Ghi log vào file
@@ -338,32 +426,7 @@ app.get("/view-logs", basicAuth, (req, res) => {
   fs.createReadStream(LOG_FILE)
     .pipe(
       csvParser({
-        headers: [
-          "Time",
-          "IP",
-          "OS",
-          "Device",
-          "Client",
-          "Engine",
-          "Browser Type",
-          "Platform",
-          "Device Model",
-          "Browser Version",
-          "Referrer",
-          "City",
-          "Region",
-          "Country",
-          "Zip",
-          "Lat",
-          "Lon",
-          "Timezone",
-          "ISP",
-          "Org",
-          "ASN",
-          "Languages",
-          "URL",
-          "Location",
-        ],
+        headers: LOG_FIELDS,
         skipLines: 1,
       })
     )
@@ -372,13 +435,13 @@ app.get("/view-logs", basicAuth, (req, res) => {
       const analytics = {
         totalRequests: logs.length,
         uniqueIPs: [...new Set(logs.map((l) => l.IP))].length,
-        browsers: countBy(logs, "Client"),
+        browsers: countBy(logs, "Browser"),
         os: countBy(logs, "OS"),
         countries: countBy(logs, "Country"),
         cities: countBy(logs, "City"),
         times: logs.map((l) => l.Time),
         suspicious: logs.filter(
-          (l) => l.Client === "Unknown" || l.BrowserType === "bot"
+          (l) => l.Client === "Unknown" || l["Browser"] === "bot"
         ),
       };
       res.json({ status: "ok", logs, analytics });

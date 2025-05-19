@@ -1,57 +1,303 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <title>Logs Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xem Logs - Bản Đồ Du Lịch Việt Nam</title>
     <link
-      href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"
+    />
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #f5f5f5;
+      }
+      .header {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+      }
+      .card-header {
+        background: white;
+        border-bottom: 1px solid #eee;
+        padding: 1rem;
+      }
+      .stats-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .stats-card i {
+        font-size: 2rem;
+        color: #2a5298;
+      }
+      .table {
+        margin-bottom: 0;
+      }
+      .table th {
+        background: #f8f9fa;
+        border-top: none;
+      }
+      .loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body>
-    <h2>📊 Logs</h2>
-    <table id="logTable" class="display" style="width: 100%">
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>IP</th>
-          <th>OS</th>
-          <th>Device</th>
-          <th>Client</th>
-          <th>City</th>
-          <th>Region</th>
-          <th>Country</th>
-          <th>ISP</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="header">
+      <div class="container">
+        <h1><i class="fas fa-chart-line"></i> Thống Kê Truy Cập</h1>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="stats-card">
+            <i class="fas fa-users"></i>
+            <h3 id="totalVisits">0</h3>
+            <p class="text-muted">Tổng lượt truy cập</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stats-card">
+            <i class="fas fa-map-marker-alt"></i>
+            <h3 id="uniqueLocations">0</h3>
+            <p class="text-muted">Vị trí khác nhau</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stats-card">
+            <i class="fas fa-globe"></i>
+            <h3 id="uniqueCountries">0</h3>
+            <p class="text-muted">Quốc gia</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stats-card">
+            <i class="fas fa-desktop"></i>
+            <h3 id="uniqueDevices">0</h3>
+            <p class="text-muted">Thiết bị</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0"><i class="fas fa-list"></i> Chi tiết truy cập</h5>
+          <div class="btn-group">
+            <button
+              class="btn btn-outline-primary btn-sm"
+              onclick="exportToCSV()"
+            >
+              <i class="fas fa-download"></i> Xuất CSV
+            </button>
+            <button
+              class="btn btn-outline-primary btn-sm"
+              onclick="refreshData()"
+            >
+              <i class="fas fa-sync-alt"></i> Làm mới
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="logsTable" class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>IP</th>
+                  <th>Vị trí</th>
+                  <th>Thiết bị</th>
+                  <th>Trình duyệt</th>
+                  <th>Hệ điều hành</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="loading-spinner"></div>
+    </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script>
-      $(document).ready(() => {
-        $.getJSON("/view-logs", (res) => {
-          if (res.status === "ok") {
-            const rows = res.logs.map(
-              (row) =>
-                `<tr>
-              <td>${row.Time}</td>
-              <td>${row.IP}</td>
-              <td>${row.OS}</td>
-              <td>${row.Device}</td>
-              <td>${row.Client}</td>
-              <td>${row.City}</td>
-              <td>${row.Region}</td>
-              <td>${row.Country}</td>
-              <td>${row.ISP}</td>
-            </tr>`,
-            );
-            $("#logTable tbody").html(rows.join(""));
-            $("#logTable").DataTable();
-          }
+      let dataTable;
+      const loading = document.getElementById("loading");
+
+      function showLoading() {
+        loading.style.display = "flex";
+      }
+
+      function hideLoading() {
+        loading.style.display = "none";
+      }
+
+      function updateStats(data) {
+        document.getElementById("totalVisits").textContent =
+          data.analytics.totalRequests;
+        document.getElementById("uniqueLocations").textContent = Object.keys(
+          data.analytics.cities
+        ).length;
+        document.getElementById("uniqueCountries").textContent = Object.keys(
+          data.analytics.countries
+        ).length;
+        document.getElementById("uniqueDevices").textContent = Object.keys(
+          data.analytics.browsers
+        ).length;
+      }
+
+      function initDataTable(data) {
+        if (dataTable) {
+          dataTable.destroy();
+        }
+
+        dataTable = $("#logsTable").DataTable({
+          data: data.logs,
+          columns: [
+            {
+              data: "Time",
+              render: function (data) {
+                return new Date(data).toLocaleString("vi-VN");
+              },
+            },
+            { data: "IP" },
+            {
+              data: null,
+              render: function (data) {
+                return `${data.City}, ${data.Country}`;
+              },
+            },
+            {
+              data: null,
+              render: function (data) {
+                return `${data.Device} (${data.Platform})`;
+              },
+            },
+            {
+              data: null,
+              render: function (data) {
+                return `${data.Client} ${data.BrowserVersion}`;
+              },
+            },
+            { data: "OS" },
+          ],
+          order: [[0, "desc"]],
+          language: {
+            url: "//cdn.datatables.net/plug-ins/1.11.5/i18n/vi.json",
+          },
         });
-      });
+      }
+
+      function loadData() {
+        showLoading();
+        fetch("/view-logs")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "ok") {
+              updateStats(data);
+              initDataTable(data);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Có lỗi xảy ra khi tải dữ liệu");
+          })
+          .finally(() => {
+            hideLoading();
+          });
+      }
+
+      function exportToCSV() {
+        const table = document.getElementById("logsTable");
+        const rows = table.querySelectorAll("tr");
+        let csv = [];
+
+        for (let i = 0; i < rows.length; i++) {
+          const row = [],
+            cols = rows[i].querySelectorAll("td, th");
+          for (let j = 0; j < cols.length; j++) {
+            let data = cols[j].innerText
+              .replace(/(\r\n|\n|\r)/gm, "")
+              .replace(/,/g, ";");
+            row.push('"' + data + '"');
+          }
+          csv.push(row.join(","));
+        }
+
+        const csvContent = csv.join("\n");
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download =
+          "logs_" + new Date().toISOString().slice(0, 10) + ".csv";
+        link.click();
+      }
+
+      function refreshData() {
+        loadData();
+      }
+
+      // Tự động tải dữ liệu khi trang được tải
+      window.onload = loadData;
+
+      // Tự động làm mới dữ liệu mỗi 5 phút
+      setInterval(loadData, 300000);
     </script>
   </body>
 </html>
